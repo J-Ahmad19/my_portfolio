@@ -1,24 +1,58 @@
 'use client'
 
-import { Mail, Link2, Code, ExternalLink } from 'lucide-react'
+import { Mail, Link2, Code, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 export function Contact() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    subject: '',
     message: '',
   })
+  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [statusMessage, setStatusMessage] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const mailtoLink = `mailto:jawwadahmad568@gmail.com?subject=From ${formData.name}&body=${formData.message}`
-    window.location.href = mailtoLink
+    setLoading(true)
+    setStatus('idle')
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('messages').insert([
+        {
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject || 'Portfolio Contact',
+          message: formData.message,
+        },
+      ])
+
+      if (error) {
+        setStatus('error')
+        setStatusMessage('Failed to send message. Please try again.')
+        console.error('[v0] Supabase error:', error)
+      } else {
+        setStatus('success')
+        setStatusMessage('Message sent successfully! I will get back to you soon.')
+        setFormData({ name: '', email: '', subject: '', message: '' })
+        setTimeout(() => setStatus('idle'), 5000)
+      }
+    } catch (error) {
+      setStatus('error')
+      setStatusMessage('An error occurred. Please try again.')
+      console.error('[v0] Error:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const socialLinks = [
@@ -49,7 +83,7 @@ export function Contact() {
         <div className="text-center mb-16">
           <h2 className="text-5xl md:text-6xl font-black mb-4">
             <span className="bg-gradient-to-r from-primary to-foreground bg-clip-text text-transparent">
-              Let's Connect
+              Let&apos;s Connect
             </span>
           </h2>
           <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
@@ -88,6 +122,18 @@ export function Contact() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Subject (Optional)</label>
+                <input
+                  type="text"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-background/50 border border-primary/20 rounded-lg text-foreground placeholder-foreground/40 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 transition-colors"
+                  placeholder="What is this about?"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Message</label>
                 <textarea
                   name="message"
@@ -97,14 +143,36 @@ export function Contact() {
                   rows={5}
                   className="w-full px-4 py-3 bg-background/50 border border-primary/20 rounded-lg text-foreground placeholder-foreground/40 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 transition-colors resize-none"
                   placeholder="Your message..."
-                ></textarea>
+                />
               </div>
+
+              {status === 'success' && (
+                <div className="flex items-center gap-2 p-3 bg-aurora-green/10 border border-aurora-green/30 rounded-lg">
+                  <CheckCircle2 className="w-5 h-5 text-aurora-green" />
+                  <p className="text-sm text-aurora-green">{statusMessage}</p>
+                </div>
+              )}
+
+              {status === 'error' && (
+                <div className="flex items-center gap-2 p-3 bg-accent/10 border border-accent/30 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-accent" />
+                  <p className="text-sm text-accent">{statusMessage}</p>
+                </div>
+              )}
 
               <button
                 type="submit"
-                className="w-full py-3 px-6 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-bold rounded-lg hover:shadow-2xl hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
+                disabled={loading}
+                className="w-full py-3 px-6 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-bold rounded-lg hover:shadow-2xl hover:shadow-primary/50 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
               >
-                Send Message
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Message'
+                )}
               </button>
             </form>
           </div>
@@ -120,15 +188,15 @@ export function Contact() {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-primary mt-1">✓</span>
-                  <span>Expert in Edge AI & Efficient Inference</span>
+                  <span>Expert in Edge AI &amp; Efficient Inference</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-primary mt-1">✓</span>
-                  <span>Data Engineering & Database Optimization</span>
+                  <span>Data Engineering &amp; Database Optimization</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-primary mt-1">✓</span>
-                  <span>Available for freelance & consulting</span>
+                  <span>Available for freelance &amp; consulting</span>
                 </li>
               </ul>
             </div>
